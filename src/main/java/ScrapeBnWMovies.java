@@ -17,8 +17,8 @@ import java.util.List;
 public class ScrapeBnWMovies {
 
 
-    Document document;
-    CSVPrinter printer;
+    private Document document;
+    private CSVPrinter printer;
 
 
     public ScrapeBnWMovies() throws IOException {
@@ -32,22 +32,40 @@ public class ScrapeBnWMovies {
 
     public void start() throws IOException {
 
-        scrapeGenre();
+        Elements genreDivs = scrapeGenre();
+
+        for (Element genreDiv : genreDivs) {
+            Elements movieElements = scrapeMovieListByGenre(genreDiv);
+
+            for (Element movieElement : movieElements) {
+                Movie movie = scrapeMovie(movieElement.select("a").attr("href"));
+
+                printer.printRecord(
+                        movie.getMovieName(),
+                        movie.getGenre(),
+                        movie.getYear(),
+                        movie.getDirectedBy(),
+                        movie.getCasts(),
+                        movie.getPosterUrl(),
+                        movie.getThumbnailGifUrl(),
+                        movie.getFirstVideoUrl(),
+                        movie.getSecondVideoUrl()
+                );
+            }
+
+            printer.flush();
+        }
 
     }
 
-    public void scrapeGenre() throws IOException {
+    private Elements scrapeGenre() throws IOException {
         document = Jsoup.connect("http://www.bnwmovies.com/").get();
         Elements genreDivs = document.select(".genreicon");
 
-        for (Element genre : genreDivs) {
-
-            scrapeMovieListByGenre(genre);
-
-        }
+        return genreDivs;
     }
 
-    public void scrapeMovieListByGenre(Element genre) throws IOException {
+    private Elements scrapeMovieListByGenre(Element genre) throws IOException {
 
         System.out.println("Scraping --- --- --- " + genre.select("a").text());
 
@@ -62,14 +80,10 @@ public class ScrapeBnWMovies {
 
         } while (document.select("a.nextpostslink").size() > 0);
 
-        for (Element movie : movieList) {
-
-            scrapeMovie(movie.select("a").attr("href"));
-
-        }
+        return movieList;
     }
 
-    public void scrapeMovie(String movieLink) throws IOException {
+    private Movie scrapeMovie(String movieLink) throws IOException {
 
         Document moviePage = Jsoup.connect(movieLink).get();
 
@@ -90,8 +104,7 @@ public class ScrapeBnWMovies {
         String firstVideoUrl = moviePage.select(".video-holder-abs:first-child > video > source:nth-child(1)").attr("src");
         String secondVideoUrl = moviePage.select(".video-holder-abs:first-child > video > source:nth-child(2)").attr("src");
 
-        printer.printRecord(movieName, genre, year, directedBy, casts, posterUrl, thumbnailGifUrl, firstVideoUrl, secondVideoUrl);
-        printer.flush();
+        return new Movie(movieName, genre, year, directedBy, casts, posterUrl, thumbnailGifUrl, firstVideoUrl, secondVideoUrl);
     }
 
 }
