@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ScrapeBnWMovies {
 
@@ -93,11 +94,10 @@ public class ScrapeBnWMovies {
         String directedBy = moviePage.select(".more-about-text li:nth-child(4)").text().replaceAll("Directed by: ", "");
 
         Elements castsElements = moviePage.select("div[class$='more-about-movie']:not([itemtype]) li");
-        List<String> castList = new ArrayList<>();
-        for (Element cast : castsElements) {
-            castList.add(cast.text());
-        }
-        String casts = String.join(", ", castList);
+
+        String casts = castsElements.stream()
+                .map(Element::text)
+                .collect(Collectors.joining(", "));
 
         String posterUrl = moviePage.select(".pinterest-sharing img").attr("src");
         String thumbnailGifUrl = moviePage.select(".video-holder-abs:first-child > video").attr("poster");
